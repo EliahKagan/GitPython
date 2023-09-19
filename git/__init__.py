@@ -16,27 +16,6 @@ from git.types import PathLike
 
 __version__ = "git"
 
-
-# { Initialization
-def _init_externals() -> None:
-    """Initialize external projects by putting them into the path"""
-    if __version__ == "git" and "PYOXIDIZER" not in os.environ:
-        sys.path.insert(1, osp.join(osp.dirname(__file__), "ext", "gitdb"))
-
-    try:
-        import gitdb
-    except ImportError as e:
-        raise ImportError("'gitdb' could not be found in your PYTHONPATH") from e
-    # END verify import
-
-
-# } END initialization
-
-
-#################
-_init_externals()
-#################
-
 # { Imports
 
 try:
