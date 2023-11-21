@@ -27,15 +27,15 @@ from git import (
 )
 from git.cmd import Git
 from git.exc import UnsafeOptionError, UnsafeProtocolError
-from git.util import rmtree, HIDE_WINDOWS_FREEZE_ERRORS, IterableList
+from git.util import HIDE_WINDOWS_FREEZE_ERRORS, IterableList, rmtree
 from test.lib import (
     GIT_DAEMON_PORT,
     TestBase,
     fixture,
+    touch_command,
     with_rw_and_rw_remote_repo,
     with_rw_repo,
 )
-
 
 # Make sure we have repeatable results.
 random.seed(0)
@@ -825,7 +825,7 @@ class TestRemote(TestBase):
             remote = rw_repo.remote("origin")
             tmp_dir = Path(tdir)
             tmp_file = tmp_dir / "pwn"
-            unsafe_options = [{"upload-pack": f"touch {tmp_file}"}]
+            unsafe_options = [{"upload-pack": touch_command(tmp_file)}]
             for unsafe_option in unsafe_options:
                 with self.assertRaises(UnsafeOptionError):
                     remote.fetch(**unsafe_option)
@@ -837,7 +837,7 @@ class TestRemote(TestBase):
             remote = rw_repo.remote("origin")
             tmp_dir = Path(tdir)
             tmp_file = tmp_dir / "pwn"
-            unsafe_options = [{"upload-pack": f"touch {tmp_file}"}]
+            unsafe_options = [{"upload-pack": touch_command(tmp_file)}]
             for unsafe_option in unsafe_options:
                 # The options will be allowed, but the command will fail.
                 assert not tmp_file.exists()
@@ -884,7 +884,7 @@ class TestRemote(TestBase):
             remote = rw_repo.remote("origin")
             tmp_dir = Path(tdir)
             tmp_file = tmp_dir / "pwn"
-            unsafe_options = [{"upload-pack": f"touch {tmp_file}"}]
+            unsafe_options = [{"upload-pack": touch_command(tmp_file)}]
             for unsafe_option in unsafe_options:
                 with self.assertRaises(UnsafeOptionError):
                     remote.pull(**unsafe_option)
@@ -896,7 +896,7 @@ class TestRemote(TestBase):
             remote = rw_repo.remote("origin")
             tmp_dir = Path(tdir)
             tmp_file = tmp_dir / "pwn"
-            unsafe_options = [{"upload-pack": f"touch {tmp_file}"}]
+            unsafe_options = [{"upload-pack": touch_command(tmp_file)}]
             for unsafe_option in unsafe_options:
                 # The options will be allowed, but the command will fail.
                 assert not tmp_file.exists()
@@ -945,8 +945,8 @@ class TestRemote(TestBase):
             tmp_file = tmp_dir / "pwn"
             unsafe_options = [
                 {
-                    "receive-pack": f"touch {tmp_file}",
-                    "exec": f"touch {tmp_file}",
+                    "receive-pack": touch_command(tmp_file),
+                    "exec": touch_command(tmp_file),
                 }
             ]
             for unsafe_option in unsafe_options:
@@ -963,8 +963,8 @@ class TestRemote(TestBase):
             tmp_file = tmp_dir / "pwn"
             unsafe_options = [
                 {
-                    "receive-pack": f"touch {tmp_file}",
-                    "exec": f"touch {tmp_file}",
+                    "receive-pack": touch_command(tmp_file),
+                    "exec": touch_command(tmp_file),
                 }
             ]
             for unsafe_option in unsafe_options:
