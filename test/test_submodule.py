@@ -26,7 +26,7 @@ from git.objects.submodule.base import Submodule
 from git.objects.submodule.root import RootModule, RootUpdateProgress
 from git.repo.fun import find_submodule_git_dir, touch
 from git.util import HIDE_WINDOWS_KNOWN_ERRORS, join_path_native, to_native_path_linux
-from test.lib import TestBase, with_rw_directory, with_rw_repo
+from test.lib import TestBase, quoted_touch_command, with_rw_directory, with_rw_repo
 
 
 @contextlib.contextmanager
@@ -1191,8 +1191,8 @@ class TestSubmodule(TestBase):
             tmp_dir = Path(tdir)
             tmp_file = tmp_dir / "pwn"
             unsafe_options = [
-                f"--upload-pack='touch {tmp_file}'",
-                f"-u 'touch {tmp_file}'",
+                f"--upload-pack={quoted_touch_command(tmp_file)}",
+                f"-u {quoted_touch_command(tmp_file)}",
                 "--config=protocol.ext.allow=always",
                 "-c protocol.ext.allow=always",
             ]
@@ -1207,8 +1207,8 @@ class TestSubmodule(TestBase):
             tmp_dir = Path(tdir)
             tmp_file = tmp_dir / "pwn"
             unsafe_options = [
-                f"--upload-pack='touch {tmp_file}'",
-                f"-u 'touch {tmp_file}'",
+                f"--upload-pack={quoted_touch_command(tmp_file)}",
+                f"-u {quoted_touch_command(tmp_file)}",
             ]
             for unsafe_option in unsafe_options:
                 # The options will be allowed, but the command will fail.
@@ -1276,8 +1276,8 @@ class TestSubmodule(TestBase):
             tmp_dir = Path(tdir)
             tmp_file = tmp_dir / "pwn"
             unsafe_options = [
-                f"--upload-pack='touch {tmp_file}'",
-                f"-u 'touch {tmp_file}'",
+                f"--upload-pack={quoted_touch_command(tmp_file)}",
+                f"-u {quoted_touch_command(tmp_file)}",
                 "--config=protocol.ext.allow=always",
                 "-c protocol.ext.allow=always",
             ]
@@ -1293,8 +1293,8 @@ class TestSubmodule(TestBase):
             tmp_dir = Path(tdir)
             tmp_file = tmp_dir / "pwn"
             unsafe_options = [
-                f"--upload-pack='touch {tmp_file}'",
-                f"-u 'touch {tmp_file}'",
+                f"--upload-pack={quoted_touch_command(tmp_file)}",
+                f"-u {quoted_touch_command(tmp_file)}",
             ]
             submodule = Submodule(rw_repo, b"\0" * 20, name="new", path="new", url=str(tmp_dir))
             for unsafe_option in unsafe_options:

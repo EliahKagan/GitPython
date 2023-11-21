@@ -42,7 +42,14 @@ from git.exc import (
 )
 from git.repo.fun import touch
 from git.util import bin_to_hex, cwd, cygpath, join_path_native, rmfile, rmtree
-from test.lib import TestBase, fixture, with_rw_directory, with_rw_repo
+from test.lib import (
+    TestBase,
+    fixture,
+    quoted_touch_command,
+    touch_command,
+    with_rw_directory,
+    with_rw_repo,
+)
 
 
 def iter_flatten(lol):
@@ -288,8 +295,8 @@ class TestRepo(TestBase):
             tmp_dir = pathlib.Path(tdir)
             tmp_file = tmp_dir / "pwn"
             unsafe_options = [
-                f"--upload-pack='touch {tmp_file}'",
-                f"-u 'touch {tmp_file}'",
+                f"--upload-pack={quoted_touch_command(tmp_file)}",
+                f"-u {quoted_touch_command(tmp_file)}",
                 "--config=protocol.ext.allow=always",
                 "-c protocol.ext.allow=always",
             ]
@@ -299,8 +306,8 @@ class TestRepo(TestBase):
                 assert not tmp_file.exists()
 
             unsafe_options = [
-                {"upload-pack": f"touch {tmp_file}"},
-                {"u": f"touch {tmp_file}"},
+                {"upload-pack": touch_command(tmp_file)},
+                {"u": touch_command(tmp_file)},
                 {"config": "protocol.ext.allow=always"},
                 {"c": "protocol.ext.allow=always"},
             ]
@@ -324,8 +331,8 @@ class TestRepo(TestBase):
             tmp_dir = pathlib.Path(tdir)
             tmp_file = tmp_dir / "pwn"
             unsafe_options = [
-                f"--upload-pack='touch {tmp_file}'",
-                f"-u 'touch {tmp_file}'",
+                f"--upload-pack={quoted_touch_command(tmp_file)}",
+                f"-u {quoted_touch_command(tmp_file)}",
             ]
             for i, unsafe_option in enumerate(unsafe_options):
                 destination = tmp_dir / str(i)
@@ -367,8 +374,8 @@ class TestRepo(TestBase):
             tmp_dir = pathlib.Path(tdir)
             tmp_file = tmp_dir / "pwn"
             unsafe_options = [
-                f"--upload-pack='touch {tmp_file}'",
-                f"-u 'touch {tmp_file}'",
+                f"--upload-pack={quoted_touch_command(tmp_file)}",
+                f"-u {quoted_touch_command(tmp_file)}",
                 "--config=protocol.ext.allow=always",
                 "-c protocol.ext.allow=always",
             ]
@@ -378,8 +385,8 @@ class TestRepo(TestBase):
                 assert not tmp_file.exists()
 
             unsafe_options = [
-                {"upload-pack": f"touch {tmp_file}"},
-                {"u": f"touch {tmp_file}"},
+                {"upload-pack": touch_command(tmp_file)},
+                {"u": touch_command(tmp_file)},
                 {"config": "protocol.ext.allow=always"},
                 {"c": "protocol.ext.allow=always"},
             ]
@@ -403,8 +410,8 @@ class TestRepo(TestBase):
             tmp_dir = pathlib.Path(tdir)
             tmp_file = tmp_dir / "pwn"
             unsafe_options = [
-                f"--upload-pack='touch {tmp_file}'",
-                f"-u 'touch {tmp_file}'",
+                f"--upload-pack={quoted_touch_command(tmp_file)}",
+                f"-u {quoted_touch_command(tmp_file)}",
             ]
             for i, unsafe_option in enumerate(unsafe_options):
                 destination = tmp_dir / str(i)

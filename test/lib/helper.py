@@ -10,6 +10,7 @@ import io
 import logging
 import os
 import os.path as osp
+import shlex
 import tempfile
 import textwrap
 import time
@@ -17,6 +18,7 @@ import unittest
 
 import gitdb
 
+from git.types import PathLike
 from git.util import rmtree, cwd
 
 TestCase = unittest.TestCase
@@ -31,6 +33,8 @@ GIT_DAEMON_PORT = os.environ.get("GIT_PYTHON_TEST_GIT_DAEMON_PORT", "19418")
 __all__ = (
     "fixture_path",
     "fixture",
+    "touch_command",
+    "quoted_touch_command",
     "StringProcessAdapter",
     "with_rw_directory",
     "with_rw_repo",
@@ -55,6 +59,14 @@ def fixture_path(name):
 def fixture(name):
     with open(fixture_path(name), "rb") as fd:
         return fd.read()
+
+
+def touch_command(path: PathLike) -> str:
+    return f"touch {shlex.quote(str(path))}"
+
+
+def quoted_touch_command(path: PathLike) -> str:
+    return shlex.quote(touch_command(path))
 
 
 # } END routines
