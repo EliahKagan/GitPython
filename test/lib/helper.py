@@ -95,7 +95,8 @@ def with_rw_directory(func):
         keep = False
         try:
             return func(self, path, *args, **kwargs)
-        except Exception:
+        except Exception as ex:
+            ex.__traceback__ = None
             _logger.info(
                 "Test %s.%s failed, output is at %r\n",
                 type(self).__name__,
@@ -146,7 +147,8 @@ def with_rw_repo(working_tree_ref, bare=False):
             os.chdir(rw_repo.working_dir)
             try:
                 return func(self, rw_repo)
-            except:  # noqa: E722 B001
+            except BaseException as ex:  # Should we catch this, or just Exception?
+                ex.__traceback__ = None
                 _logger.info("Keeping repo after failure: %s", repo_dir)
                 repo_dir = None
                 raise
@@ -201,6 +203,7 @@ def git_daemon_launched(base_path, ip, port):
         # Yes, I know... fortunately, this is always going to work if sleep time is just large enough.
         time.sleep(1.0 if os.name == "nt" else 0.5)
     except Exception as ex:
+        ex.__traceback__ = None
         msg = textwrap.dedent(
             """
         Launching git-daemon failed due to: %s
@@ -225,6 +228,7 @@ def git_daemon_launched(base_path, ip, port):
                 gd.proc.kill()
             except Exception as ex:
                 # Either it has died (and we're here), or it won't die, again here...
+                ex.__traceback__ = None
                 _logger.debug("Hidden error while Killing git-daemon: %s", ex, exc_info=1)
 
 
@@ -280,7 +284,8 @@ def with_rw_and_rw_remote_repo(working_tree_ref):
                     section = "daemon"
                     try:
                         crw.add_section(section)
-                    except Exception:
+                    except Exception as ex:
+                        ex.__traceback__ = None
                         pass
                     crw.set(section, "receivepack", True)
 
@@ -306,7 +311,8 @@ def with_rw_and_rw_remote_repo(working_tree_ref):
                     with cwd(rw_repo.working_dir):
                         try:
                             return func(self, rw_repo, rw_daemon_repo)
-                        except:  # noqa: E722 B001
+                        except BaseException as ex:  # Should we catch this, or just Exception?
+                            ex.__traceback__ = None
                             _logger.info(
                                 "Keeping repos after failure: \n  rw_repo_dir: %s \n  rw_daemon_repo_dir: %s",
                                 rw_repo_dir,
