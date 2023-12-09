@@ -38,7 +38,11 @@ from git.util import (
     remove_password_if_present,
     rmtree,
 )
-from test.lib import TestBase, with_rw_repo
+from test.lib import (
+    TestBase,
+    is_windows_without_symlink_creation_privilege,
+    with_rw_repo,
+)
 
 
 @pytest.fixture
@@ -110,6 +114,11 @@ class TestRmtree:
     @pytest.mark.skipif(
         sys.platform == "cygwin",
         reason="Cygwin can't set the permissions that make the test meaningful.",
+    )
+    @pytest.mark.xfail(
+        is_windows_without_symlink_creation_privilege(),
+        reason="Windows settings and user privileges deny new symlink creation.",
+        raises=OSError,
     )
     def test_avoids_changing_permissions_outside_tree(self, tmp_path):
         # Automatically works on Windows, but on Unix requires either special handling

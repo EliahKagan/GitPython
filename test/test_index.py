@@ -46,6 +46,7 @@ from test.lib import (
     VirtualEnvironment,
     fixture,
     fixture_path,
+    is_windows_without_symlink_creation_privilege,
     with_rw_directory,
     with_rw_repo,
 )
@@ -560,11 +561,6 @@ class TestIndex(TestBase):
 
     # END num existing helper
 
-    @pytest.mark.xfail(
-        os.name == "nt" and Git().config("core.symlinks") == "true",
-        reason="Assumes symlinks are not created on Windows and opens a symlink to a nonexistent target.",
-        raises=FileNotFoundError,
-    )
     @with_rw_repo("0.1.6")
     def test_index_mutation(self, rw_repo):
         index = rw_repo.index
@@ -754,12 +750,12 @@ class TestIndex(TestBase):
         self.assertNotEqual(entries[0].hexsha, null_hex_sha)
 
         # Add symlink.
-        if os.name != "nt":
+        if not is_windows_without_symlink_creation_privilege():
             for target in ("/etc/nonexisting", "/etc/passwd", "/etc"):
                 basename = "my_real_symlink"
 
                 link_file = osp.join(rw_repo.working_tree_dir, basename)
-                os.symlink(target, link_file)
+                os.symlink(target, link_file, target_is_directory=True)
                 entries = index.reset(new_commit).add([link_file], fprogress=self._fprogress_add)
                 self._assert_entries(entries)
                 self._assert_fprogress(entries)
@@ -777,7 +773,7 @@ class TestIndex(TestBase):
             # END for each target
         # END real symlink test
 
-        # Add fake symlink and assure it checks out as a symlink.
+        # Add fake symlink and verify that it checks out as a symlink.
         fake_symlink_relapath = "my_fake_symlink"
         link_target = "/etc/that"
         fake_symlink_path = self._make_file(fake_symlink_relapath, link_target, rw_repo)
@@ -811,13 +807,17 @@ class TestIndex(TestBase):
         os.remove(fake_symlink_path)
         index.checkout(fake_symlink_path)
 
-        # On Windows, we currently assume we will never get symlinks.
-        if os.name == "nt":
-            # Symlinks should contain the link as text (which is what a
-            # symlink actually is).
+        # We should get a symlink, unless Git is configured not to create them. We check
+        # this with "git config" from the current directory, because this configuration
+        # variable is not (intentionally) changed for the test repository. On Windows,
+        # this is usually set to "false" even if the user is capable of creating symlinks
+        # without elevating privileges. This is rarely set to "false" on other systems.
+        if Git().config("core.symlinks", with_exceptions=False) == "false":
+            # It should contain the path as text (which is what a symlink actually is).
             with open(fake_symlink_path, "rt") as fd:
                 self.assertEqual(fd.read(), link_target)
         else:
+            # It should be a real symlink in the filesystem.
             self.assertTrue(S_ISLNK(os.lstat(fake_symlink_path)[ST_MODE]))
 
         # TEST RENAMING

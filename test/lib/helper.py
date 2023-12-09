@@ -10,6 +10,7 @@ import io
 import logging
 import os
 import os.path as osp
+from pathlib import Path
 import tempfile
 import textwrap
 import time
@@ -32,6 +33,7 @@ GIT_DAEMON_PORT = os.environ.get("GIT_PYTHON_TEST_GIT_DAEMON_PORT", "19418")
 __all__ = (
     "fixture_path",
     "fixture",
+    "is_windows_without_symlink_creation_privilege",
     "StringProcessAdapter",
     "with_rw_directory",
     "with_rw_repo",
@@ -47,6 +49,8 @@ __all__ = (
 
 _logger = logging.getLogger(__name__)
 
+_ERROR_PRIVILEGE_NOT_HELD = 1314
+
 # { Routines
 
 
@@ -57,6 +61,24 @@ def fixture_path(name):
 def fixture(name):
     with open(fixture_path(name), "rb") as fd:
         return fd.read()
+
+
+def is_windows_without_symlink_creation_privilege():
+    if os.name != "nt":
+        return False
+
+    with tempfile.TemporaryDirectory() as tdir:
+        target = Path(tdir, "target")
+        symlink = Path(tdir, "symlink")
+        target.touch()
+        try:
+            symlink.symlink_to(target)
+        except OSError as error:
+            if error.winerror == _ERROR_PRIVILEGE_NOT_HELD:
+                return True
+            raise
+        assert symlink.is_symlink()
+        return False
 
 
 # } END routines
