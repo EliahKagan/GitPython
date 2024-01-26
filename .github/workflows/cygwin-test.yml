@@ -63,12 +63,12 @@ jobs:
       run: |
         # Get the latest pip, wheel, and prior to Python 3.12, setuptools.
         . .venv/bin/activate
-        python -m pip install -U pip $(pip freeze --all | grep -ow ^setuptools) wheel
+        python -v -m pip -v install -U pip $(pip freeze --all | grep -ow ^setuptools) wheel
 
     - name: Install project and test dependencies
       run: |
         . .venv/bin/activate
-        python -m pip install ".[test]"
+        python -v -m pip install ".[test]"
 
     - name: Show version and platform information
       run: |
