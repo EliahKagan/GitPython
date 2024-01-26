@@ -63,11 +63,11 @@ jobs:
     - name: Update PyPA packages
       run: |
         # Get the latest pip, wheel, and prior to Python 3.12, setuptools.
-        python -m pip -vvv install -U pip $(pip freeze --all | grep -ow ^setuptools) wheel
+        python -m pip -vvv --no-cache-dir install -U pip $(pip freeze --all | grep -ow ^setuptools) wheel
 
     - name: Install project and test dependencies
       run: |
-        pip install -vvv ".[test]"
+        pip install -vvv --no-cache-dir ".[test]"
 
     - name: Show version and platform information
       run: |
