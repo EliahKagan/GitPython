@@ -60,13 +60,16 @@ jobs:
         # This is used unless, and before, an updated pip is installed.
         ln -s pip3 /usr/bin/pip
 
-    - name: Install code coverage dependencies
-      run: |
-        pip install "coverage[toml]"
-
     - name: Install project and test dependencies
       run: |
-        pip install ".[test]"
+        set +e
+        for t in {1..5}; do
+          echo "Starting try $t."
+          timeout 70s pip install ".[test]"
+          status="$?"
+          ((status == 124)) || break
+        done
+        exit "$status"
 
     - name: Show version and platform information
       run: |
