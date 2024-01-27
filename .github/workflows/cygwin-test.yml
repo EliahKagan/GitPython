@@ -54,6 +54,11 @@ jobs:
         # and cause subsequent tests to fail
         cat test/fixtures/.gitconfig >> ~/.gitconfig
 
+    - name: Update PyPA packages
+      run: |
+        # Get the latest pip, setuptools, and wheel.
+        python3.9 -m pip install -U pip setuptools wheel
+
     - name: Install project and test dependencies
       run: |
         python3.9 -m pip install ".[test]"
