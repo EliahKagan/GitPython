@@ -63,9 +63,9 @@ jobs:
     - name: Install project and test dependencies
       run: |
         set +e
-        for t in {1..5}; do
+        for t in {1..10}; do
           echo "Starting try $t."
-          timeout -s KILL "$((30 * (t + 1)))"s pip install ".[test]"
+          timeout -s KILL "$((10 + t * 20))"s pip install ".[test]"
           status="$?"
           ((status == 137)) || break
         done
