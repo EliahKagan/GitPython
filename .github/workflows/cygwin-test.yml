@@ -65,9 +65,9 @@ jobs:
         set +e
         for t in {1..5}; do
           echo "Starting try $t."
-          timeout 70s pip install ".[test]"
+          timeout -s KILL 70s pip install ".[test]"
           status="$?"
-          ((status == 124)) || break
+          ((status == 137)) || break
         done
         exit "$status"
 
