@@ -30,7 +30,7 @@ jobs:
     - name: Set up Cygwin
       uses: egor-tensin/setup-cygwin@v4
       with:
-        packages: python38 python38-pip python38-virtualenv git
+        packages: python39 python39-pip python39-virtualenv git
 
     - name: Arrange for verbose output
       run: |
@@ -57,20 +57,20 @@ jobs:
     - name: Update PyPA packages
       run: |
         # Get the latest pip, setuptools, and wheel.
-        python3.8 -m pip install -U pip setuptools wheel
+        python3.9 -m pip install -U pip setuptools wheel
 
     - name: Install project and test dependencies
       run: |
-        python3.8 -m pip install ".[test]"
+        python3.9 -m pip install ".[test]"
 
     - name: Show version and platform information
       run: |
         uname -a
-        command -v git python3.8
+        command -v git python3.9
         git version
-        python3.8 --version
-        python3.8 -c 'import os, sys; print(f"sys.platform={sys.platform!r}, os.name={os.name!r}")'
+        python3.9 --version
+        python3.9 -c 'import os, sys; print(f"sys.platform={sys.platform!r}, os.name={os.name!r}")'
 
     - name: Test with pytest
       run: |
-        python3.8 -m pytest --color=yes -p no:sugar --instafail -vv
+        python3.9 -m pytest --color=yes -p no:sugar --instafail -vv
