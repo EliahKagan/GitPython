@@ -62,11 +62,11 @@ jobs:
 
     - name: Install code coverage dependencies
       run: |
-        pip -vvv install "coverage[toml]"
+        pip install "coverage[toml]"
 
     - name: Install project and test dependencies
       run: |
-        pip -vvv install ".[test]"
+        pip install ".[test]"
 
     - name: Show version and platform information
       run: |
