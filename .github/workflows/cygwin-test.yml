@@ -60,6 +60,10 @@ jobs:
         # This is used unless, and before, an updated pip is installed.
         ln -s pip3 /usr/bin/pip
 
+    - name: Install code coverage dependencies
+      run: |
+        pip -vvv install "coverage[toml]"
+
     - name: Install project and test dependencies
       run: |
         pip -vvv install ".[test]"
