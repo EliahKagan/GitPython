@@ -300,6 +300,7 @@ def parse_date(string_date: Union[str, datetime]) -> Tuple[int, int]:
             raise ValueError("no format matched")
         # END handle format
     except Exception as e:
+        e.__traceback__ = None
         raise ValueError(f"Unsupported date format or type: {string_date}, type={type(string_date)}") from e
     # END handle exceptions
 

@@ -113,6 +113,7 @@ class HEAD(SymbolicReference):
         try:
             self.repo.git.reset(mode, commit, "--", paths, **kwargs)
         except GitCommandError as e:
+            e.__traceback__ = None
             # git nowadays may use 1 as status to indicate there are still unstaged
             # modifications after the reset.
             if e.status != 1:

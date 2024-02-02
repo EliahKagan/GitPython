@@ -145,6 +145,7 @@ def handle_process_output(
                         handler(line)
 
         except Exception as ex:
+            ex.__traceback__ = None
             _logger.error(f"Pumping {name!r} of cmd({remove_password_if_present(cmdline)}) failed due to: {ex!r}")
             if "I/O operation on closed file" not in str(ex):
                 # Only reraise if the error was not due to the stream closing
@@ -599,6 +600,7 @@ class Git(LazyMixin):
                     self.status = self._status_code_if_terminate or proc.poll()
                     return
             except OSError as ex:
+                ex.__traceback__ = None
                 _logger.info("Ignored error after process had died: %r", ex)
 
             # It can be that nothing really exists anymore...
@@ -612,6 +614,7 @@ class Git(LazyMixin):
 
                 self.status = self._status_code_if_terminate or status
             except OSError as ex:
+                ex.__traceback__ = None
                 _logger.info("Ignored error after process had died: %r", ex)
             # END exception handling
 
@@ -1076,6 +1079,7 @@ class Git(LazyMixin):
                 **subprocess_kwargs,
             )
         except cmd_not_found_exception as err:
+            err.__traceback__ = None
             raise GitCommandNotFound(redacted_command, err) from err
         else:
             # Replace with a typeguard for Popen[bytes]?
@@ -1363,6 +1367,7 @@ class Git(LazyMixin):
             try:
                 index = ext_args.index(insert_after_this_arg)
             except ValueError as err:
+                err.__traceback__ = None
                 raise ValueError(
                     "Couldn't find argument '%s' in args %s to insert cmd options after"
                     % (insert_after_this_arg, str(ext_args))

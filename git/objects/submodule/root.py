@@ -390,6 +390,7 @@ class RootModule(Submodule):
                 # END handle
             # END for each common submodule
         except Exception as err:
+            err.__traceback__ = None
             if not keep_going:
                 raise
             _logger.error(str(err))

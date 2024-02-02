@@ -106,6 +106,7 @@ def run_commit_hook(name: str, index: "IndexFile", *args: str) -> None:
             cwd=index.repo.working_dir,
         )
     except Exception as ex:
+        ex.__traceback__ = None
         raise HookExecutionError(hp, ex) from ex
     else:
         stdout_list: List[str] = []

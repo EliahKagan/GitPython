@@ -452,6 +452,7 @@ class Repo:
         try:
             return self.submodules[name]
         except IndexError as e:
+            e.__traceback__ = None
             raise ValueError("Didn't find submodule named %r" % name) from e
         # END exception handling
 
@@ -735,6 +736,7 @@ class Repo:
         try:
             lines = self.git.merge_base(*rev, **kwargs).splitlines()  # List[str]
         except GitCommandError as err:
+            err.__traceback__ = None
             if err.status == 128:
                 raise
             # END handle invalid rev
@@ -759,6 +761,7 @@ class Repo:
         try:
             self.git.merge_base(ancestor_rev, rev, is_ancestor=True)
         except GitCommandError as err:
+            err.__traceback__ = None
             if err.status == 1:
                 return False
             raise
@@ -937,6 +940,7 @@ class Repo:
         try:
             proc: str = self.git.check_ignore(*paths)
         except GitCommandError as err:
+            err.__traceback__ = None
             # If return code is 1, this means none of the items in *paths
             # are ignored by Git, so return an empty list.  Raise the
             # exception on all other return codes.

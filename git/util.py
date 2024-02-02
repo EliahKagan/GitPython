@@ -213,6 +213,8 @@ def rmtree(path: PathLike) -> None:
         try:
             function(path)
         except PermissionError as ex:
+            ex.__traceback__ = None
+
             if HIDE_WINDOWS_KNOWN_ERRORS:
                 from unittest import SkipTest
 
@@ -466,6 +468,7 @@ def is_cygwin_git(git_executable: Union[None, PathLike]) -> bool:
             # retcode = process.poll()
             is_cygwin = "CYGWIN" in uname_out
         except Exception as ex:
+            ex.__traceback__ = None
             _logger.debug("Failed checking if running in CYGWIN due to: %r", ex)
         _is_cygwin_cache[git_executable] = is_cygwin
 
@@ -1015,6 +1018,7 @@ class LockFile:
             with open(lock_file, mode="w"):
                 pass
         except OSError as e:
+            e.__traceback__ = None
             raise IOError(str(e)) from e
 
         self._owns_lock = True
@@ -1080,6 +1084,7 @@ class BlockingLockFile(LockFile):
             try:
                 super()._obtain_lock()
             except IOError as e:
+                e.__traceback__ = None
                 # synity check: if the directory leading to the lockfile is not
                 # readable anymore, raise an exception
                 curtime = time.time()
@@ -1170,6 +1175,7 @@ class IterableList(List[T_IterableObj]):
             try:
                 return getattr(self, index)
             except AttributeError as e:
+                e.__traceback__ = None
                 raise IndexError("No item found with id %r" % (self._prefix + index)) from e
         # END handle getattr
 

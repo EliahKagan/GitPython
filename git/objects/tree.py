@@ -217,6 +217,7 @@ class Tree(IndexObject, git_diff.Diffable, util.Traversable, util.Serializable):
             try:
                 yield self._map_id_to_type[mode >> 12](self.repo, binsha, mode, path)
             except KeyError as e:
+                e.__traceback__ = None
                 raise TypeError("Unknown mode %o found in tree data for path '%s'" % (mode, path)) from e
         # END for each item
 

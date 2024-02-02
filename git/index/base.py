@@ -255,7 +255,8 @@ class IndexFile(LazyMixin, git_diff.Diffable, Serializable):
 
         try:
             self._serialize(stream, ignore_extension_data)
-        except BaseException:
+        except BaseException as ex:
+            ex.__traceback__ = None
             lfd.rollback()
             raise
 
@@ -453,7 +454,8 @@ class IndexFile(LazyMixin, git_diff.Diffable, Serializable):
                         yield osp.join(root.replace(rs, ""), rela_file)
                     # END for each file in subdir
                 # END for each subdirectory
-            except OSError:
+            except OSError as ex:
+                ex.__traceback__ = None
                 # It was a file or something that could not be iterated.
                 yield abs_path.replace(rs, "")
             # END path exception handling
@@ -493,6 +495,7 @@ class IndexFile(LazyMixin, git_diff.Diffable, Serializable):
                 proc.stdin.write(("%s\n" % filepath).encode(defenc))
             except IOError as e:
                 # Pipe broke, usually because some error happened.
+                e.__traceback__ = None
                 raise fmakeexc() from e
             # END write exception handling
             proc.stdin.flush()
@@ -1317,7 +1320,8 @@ class IndexFile(LazyMixin, git_diff.Diffable, Serializable):
             # END for each path
             try:
                 self._flush_stdin_and_wait(proc, ignore_stdout=True)
-            except GitCommandError:
+            except GitCommandError as ex:
+                ex.__traceback__ = None
                 # Without parsing stdout we don't know what failed.
                 raise CheckoutError(
                     "Some files could not be checked out from the index, probably because they didn't exist.",

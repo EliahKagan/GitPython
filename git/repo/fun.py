@@ -298,6 +298,7 @@ def rev_parse(repo: "Repo", rev: str) -> Union["Commit", "Tag", "Tree", "Blob"]:
                     # transform reversed index into the format of our revlog
                     revlog_index = -(int(output_type) + 1)
                 except ValueError as e:
+                    e.__traceback__ = None
                     # TODO: Try to parse the other date options, using parse_date
                     # maybe
                     raise NotImplementedError("Support for additional @{...} modes not implemented") from e
@@ -306,6 +307,7 @@ def rev_parse(repo: "Repo", rev: str) -> Union["Commit", "Tag", "Tree", "Blob"]:
                 try:
                     entry = ref.log_entry(revlog_index)
                 except IndexError as e:
+                    e.__traceback__ = None
                     raise IndexError("Invalid revlog index: %i" % revlog_index) from e
                 # END handle index out of bound
 

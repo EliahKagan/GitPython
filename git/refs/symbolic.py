@@ -450,7 +450,8 @@ class SymbolicReference:
         try:
             fd.write(write_value.encode("utf-8") + b"\n")
             lfd.commit()
-        except BaseException:
+        except BaseException as ex:
+            ex.__traceback__ = None
             lfd.rollback()
             raise
         # Adjust the reflog

@@ -408,7 +408,8 @@ class GitConfigParser(cp.RawConfigParser, metaclass=MetaParserBuilder):
 
         try:
             self.write()
-        except IOError:
+        except IOError as ex:
+            ex.__traceback__ = None
             _logger.error("Exception during destruction of GitConfigParser", exc_info=True)
         except ReferenceError:
             # This happens in Python 3... and usually means that some state cannot be
@@ -771,9 +772,10 @@ class GitConfigParser(cp.RawConfigParser, metaclass=MetaParserBuilder):
         """
         try:
             valuestr = self.get(section, option)
-        except Exception:
+        except Exception as ex:
             if default is not None:
                 return default
+            ex.__traceback__ = None
             raise
 
         return self._string_to_value(valuestr)
@@ -801,9 +803,10 @@ class GitConfigParser(cp.RawConfigParser, metaclass=MetaParserBuilder):
         try:
             self.sections()
             lst = self._sections[section].getall(option)
-        except Exception:
+        except Exception as ex:
             if default is not None:
                 return [default]
+            ex.__traceback__ = None
             raise
 
         return [self._string_to_value(valuestr) for valuestr in lst]

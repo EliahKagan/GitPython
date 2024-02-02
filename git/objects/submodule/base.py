@@ -227,6 +227,7 @@ class Submodule(IndexObject, TraversableIterableObj):
             try:
                 fp_module = cls._sio_modules(parent_commit)
             except KeyError as e:
+                e.__traceback__ = None
                 raise IOError(
                     "Could not find %s file in the tree of parent commit %s" % (cls.k_modules_file, parent_commit)
                 ) from e
@@ -662,7 +663,8 @@ class Submodule(IndexObject, TraversableIterableObj):
                         prefix + "Done fetching remote of submodule %r" % self.name,
                     )
                 # END fetch new data
-            except InvalidGitRepositoryError:
+            except InvalidGitRepositoryError as git_error:
+                git_error.__traceback__ = None
                 mrepo = None
                 if not init:
                     return self
@@ -674,6 +676,7 @@ class Submodule(IndexObject, TraversableIterableObj):
                     try:
                         os.rmdir(checkout_module_abspath)
                     except OSError as e:
+                        e.__traceback__ = None
                         raise OSError(
                             "Module directory at %r does already exist and is non-empty" % checkout_module_abspath
                         ) from e
@@ -830,6 +833,7 @@ class Submodule(IndexObject, TraversableIterableObj):
                 )
             # END update to new commit only if needed
         except Exception as err:
+            err.__traceback__ = None
             if not keep_going:
                 raise
             _logger.error(str(err))
@@ -943,6 +947,7 @@ class Submodule(IndexObject, TraversableIterableObj):
                     nentry = git.IndexEntry(entry[:3] + (module_checkout_path,) + entry[4:])
                     index.entries[tekey] = nentry
                 except KeyError as e:
+                    e.__traceback__ = None
                     raise InvalidGitRepositoryError("Submodule's entry at %r did not exist" % (self.path)) from e
                 # END handle submodule doesn't exist
 
@@ -951,7 +956,8 @@ class Submodule(IndexObject, TraversableIterableObj):
                     writer.set_value("path", module_checkout_path)
                     self.path = module_checkout_path
             # END handle configuration flag
-        except Exception:
+        except Exception as ex:
+            ex.__traceback__ = None
             if renamed_module:
                 os.renames(module_checkout_abspath, cur_path)
             # END undo module renaming

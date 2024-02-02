@@ -228,6 +228,7 @@ class PushInfo(IterableObj):
         try:
             flags |= cls._flag_map[control_character]
         except KeyError as e:
+            e.__traceback__ = None
             raise ValueError("Control character %r unknown as parsed from line %r" % (control_character, line)) from e
         # END handle control character
 
@@ -416,6 +417,7 @@ class FetchInfo(IterableObj):
             _new_hex_sha, _fetch_operation, fetch_note = fetch_line.split("\t")
             ref_type_name, fetch_note = fetch_note.split(" ", 1)
         except ValueError as e:  # unpack error
+            e.__traceback__ = None
             raise ValueError("Failed to parse FETCH_HEAD line: %r" % fetch_line) from e
 
         # Parse flags from control_character.
@@ -423,6 +425,7 @@ class FetchInfo(IterableObj):
         try:
             flags |= cls._flag_map[control_character]
         except KeyError as e:
+            e.__traceback__ = None
             raise ValueError("Control character %r unknown as parsed from line %r" % (control_character, line)) from e
         # END control char exception handling
 
@@ -675,6 +678,7 @@ class Remote(LazyMixin, IterableObj):
             for line in remote_details.split("\n"):
                 yield line
         except GitCommandError as ex:
+            ex.__traceback__ = None
             ## We are on git < 2.7 (i.e TravisCI as of Oct-2016),
             #  so `get-utl` command does not exist yet!
             #    see: https://github.com/gitpython-developers/GitPython/pull/528#issuecomment-252976319
@@ -688,6 +692,7 @@ class Remote(LazyMixin, IterableObj):
                         if "  Push  URL:" in line:
                             yield line.split(": ")[-1]
                 except GitCommandError as _ex:
+                    _ex.__traceback__ = None
                     if any(msg in str(_ex) for msg in ["correct access rights", "cannot run ssh"]):
                         # If ssh is not setup to access this repository, see issue 694.
                         remote_details = self.repo.git.config("--get-all", "remote.%s.url" % self.name)
@@ -878,6 +883,7 @@ class Remote(LazyMixin, IterableObj):
             try:
                 output.append(FetchInfo._from_line(self.repo, err_line, fetch_line))
             except ValueError as exc:
+                exc.__traceback__ = None
                 _logger.debug("Caught error while parsing line: %s", exc)
                 _logger.warning("Git informed while fetching: %s", err_line.strip())
         return output
@@ -916,6 +922,7 @@ class Remote(LazyMixin, IterableObj):
         try:
             proc.wait(stderr=stderr_text)
         except Exception as e:
+            e.__traceback__ = None
             # This is different than fetch (which fails if there is any stderr
             # even if there is an output).
             if not output:
