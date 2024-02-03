@@ -198,6 +198,7 @@ class Tutorials(TestBase):
         # .gitmodules was written and added to the index, which is now being committed.
         cloned_repo.index.commit("Added submodule")
         assert sm.exists() and sm.module_exists()  # This submodule is definitely available.
+        del bare_repo, item, origin, fetch_info, bare_master  # Let files close. (Allows removal on Windows.)
         sm.remove(module=True, configuration=False)  # Remove the working tree.
         assert sm.exists() and not sm.module_exists()  # The submodule itself is still available.
 
