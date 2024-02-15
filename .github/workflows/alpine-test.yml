@@ -24,10 +24,12 @@ jobs:
         shell: sudo -u runner sh -exo pipefail {0}
 
     steps:
-    - uses: docker://multiarch/qemu-user-static
+    - uses: addnab/docker-run-action@v3
       with:
+        image: multiarch/qemu-user-static
         options: --privileged
-        args: --reset -p yes
+        shell: ''
+        run: --reset -p yes
 
     - name: Prepare Alpine Linux
       run: |
