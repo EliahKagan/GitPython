@@ -4,10 +4,20 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
   build:
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [amd64, s390x]
+        include:
+        - pytest-addopts: --deselect=test/performance
+        - architecture: amd64
+          pytest-addopts: ''
+
     runs-on: ubuntu-latest
 
     container:
-      image: alpine:latest
+      image: ${{ matrix.architecture }}/alpine:latest
+      options: --platform linux/${{ matrix.architecture }}
 
     defaults:
       run:
@@ -17,7 +27,7 @@ jobs:
     - name: Prepare Alpine Linux
       run: |
         apk add sudo git git-daemon python3 py3-pip
-        echo 'Defaults env_keep += "CI GITHUB_* RUNNER_*"' >/etc/sudoers.d/ci_env
+        echo 'Defaults env_keep += "CI GITHUB_* RUNNER_* PYTEST_ADDOPTS"' >/etc/sudoers.d/ci_env
         addgroup -g 127 docker
         adduser -D -u 1001 runner
         adduser runner docker
@@ -70,3 +80,5 @@ jobs:
     - name: Test with pytest
       run: |
         pytest --color=yes -p no:sugar --instafail -vv
+      env:
+        PYTEST_ADDOPTS: ${{ matrix.pytest-addopts }}
