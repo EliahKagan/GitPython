@@ -755,7 +755,7 @@ class TestIndex(TestBase):
                 basename = "my_real_symlink"
 
                 link_file = osp.join(rw_repo.working_tree_dir, basename)
-                os.symlink(target, link_file, target_is_directory=True)
+                os.symlink(target, link_file)
                 entries = index.reset(new_commit).add([link_file], fprogress=self._fprogress_add)
                 self._assert_entries(entries)
                 self._assert_fprogress(entries)
