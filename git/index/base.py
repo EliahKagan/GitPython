@@ -678,12 +678,15 @@ class IndexFile(LazyMixin, git_diff.Diffable, Serializable):
         if S_ISLNK(st.st_mode):
             # In PY3, readlink is a string, but we need bytes.
             # In PY2, it was just OS encoded bytes, we assumed UTF-8.
-            open_stream: Callable[[], BinaryIO] = lambda: BytesIO(force_bytes(os.readlink(filepath), encoding=defenc))
+            target = force_bytes(os.readlink(filepath), encoding=defenc)
+            open_stream: Callable[[], BinaryIO] = lambda: BytesIO(target)
+            size = len(target) if os.name == "nt" else st.st_size
         else:
             open_stream = lambda: open(filepath, "rb")
+            size = st.st_size
         with open_stream() as stream:
             fprogress(filepath, False, filepath)
-            istream = self.repo.odb.store(IStream(Blob.type, st.st_size, stream))
+            istream = self.repo.odb.store(IStream(Blob.type, size, stream))
             fprogress(filepath, True, filepath)
         return BaseIndexEntry(
             (
