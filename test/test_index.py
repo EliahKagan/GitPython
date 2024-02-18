@@ -28,6 +28,7 @@ from git import (
     Repo,
     Tree,
 )
+from git.compat import defenc
 from git.exc import (
     CheckoutError,
     GitCommandError,
@@ -751,26 +752,40 @@ class TestIndex(TestBase):
 
         # Add symlink.
         if not is_windows_without_symlink_creation_privilege():
-            for target in ("/etc/nonexisting", "/etc/passwd", "/etc"):
-                basename = "my_real_symlink"
+            with tempfile.TemporaryDirectory() as tdir:
+                nonexisting = Path(tdir, "nonexisting")
+                existing_file = Path(tdir, "existing_file")
+                existing_file.touch()
+                existing_dir = Path(tdir, "existing_dir")
+                existing_dir.mkdir()
 
-                link_file = osp.join(rw_repo.working_tree_dir, basename)
-                os.symlink(target, link_file)
-                entries = index.reset(new_commit).add([link_file], fprogress=self._fprogress_add)
-                self._assert_entries(entries)
-                self._assert_fprogress(entries)
-                self.assertEqual(len(entries), 1)
-                self.assertTrue(S_ISLNK(entries[0].mode))
-                self.assertTrue(S_ISLNK(index.entries[index.entry_key("my_real_symlink", 0)].mode))
+                for target in nonexisting, existing_file, existing_dir:
+                    target_abspath = target.absolute()
+                    symlink_basename = "my_real_symlink"
+                    symlink = Path(rw_repo.working_tree_dir, symlink_basename)
+                    symlink.symlink_to(
+                        target_abspath,
+                        target_is_directory=target.is_dir(),  # Windows symlinks care.
+                    )
+                    entries = index.reset(new_commit).add(
+                        [str(symlink)],
+                        fprogress=self._fprogress_add,
+                    )
+                    self._assert_entries(entries)
+                    self._assert_fprogress(entries)
+                    self.assertEqual(len(entries), 1)
+                    self.assertTrue(S_ISLNK(entries[0].mode))
+                    entry_key = index.entry_key(symlink_basename, 0)
+                    self.assertTrue(S_ISLNK(index.entries[entry_key].mode))
 
-                # We expect only the target to be written.
-                self.assertEqual(
-                    index.repo.odb.stream(entries[0].binsha).read().decode("ascii"),
-                    target,
-                )
+                    # We expect only the target to be written.
+                    self.assertEqual(
+                        index.repo.odb.stream(entries[0].binsha).read().decode(defenc),
+                        str(target_abspath),
+                    )
 
-                os.remove(link_file)
-            # END for each target
+                    os.remove(symlink)
+                # END for each target
         # END real symlink test
 
         # Add fake symlink and verify that it checks out as a symlink.
