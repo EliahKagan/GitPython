@@ -15,21 +15,28 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "macos-13", "macos-14", "windows-latest"]
         python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+        use-conda-python: [false, true]
         exclude:
         - os: "macos-14"
           python-version: "3.7"
         - os: "macos-14"
           python-version: "3.8"
+          use-conda-python: false
         - os: "macos-14"
           python-version: "3.9"
+          use-conda-python: false
         include:
         - experimental: false
+        - use-conda-python: false
+          shell: bash --noprofile --norc -exo pipefail {0}
+        - use-conda-python: true
+          shell: micromamba run -n test-env bash --noprofile --norc -exo pipefail {0}
 
     runs-on: ${{ matrix.os }}
 
     defaults:
       run:
-        shell: bash --noprofile --norc -exo pipefail {0}
+        shell: ${{ matrix.shell }}
 
     steps:
     - uses: actions/checkout@v4
@@ -37,10 +44,18 @@ jobs:
         fetch-depth: 0
 
     - name: Set up Python ${{ matrix.python-version }}
+      if: ${{ !matrix.use-conda-python }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: ${{ matrix.experimental }}
+
+    - name: Set up micromamba with Python ${{ matrix.python-version }}
+      if: matrix.use-conda-python
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        environment-name: test-env
+        create-args: python=${{ matrix.python-version }}
 
     - name: Set up WSL (Windows)
       if: startsWith(matrix.os, 'windows')
