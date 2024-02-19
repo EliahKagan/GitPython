@@ -975,6 +975,7 @@ class TestSubmodule(TestBase):
         # garbage collector detailed in https://github.com/python/cpython/issues/97922.)
         if os.name == "nt" and sys.version_info >= (3, 12):
             gc.collect()
+            gc.collect()
 
         new_path = "renamed/myname"
         assert sm.move(new_path).name == new_path
