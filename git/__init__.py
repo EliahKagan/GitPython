@@ -186,6 +186,15 @@ except GitError as _exc:
     raise ImportError("%s: %s" % (_exc.__class__.__name__, _exc)) from _exc
 
 
+def _version() -> str:
+    if sys.version_info >= (3, 8):
+        from importlib.metadata import version
+    else:
+        from importlib_metadata import version
+
+    return version("GitPython")
+
+
 def _warned_import(message: str, fullname: str) -> "ModuleType":
     import importlib
 
@@ -195,12 +204,7 @@ def _warned_import(message: str, fullname: str) -> "ModuleType":
 
 def _getattr(name: str) -> Any:
     if name == "__version__":
-        if sys.version_info >= (3, 8):
-            from importlib.metadata import version
-        else:
-            from importlib_metadata import version
-
-        return version("GitPython")
+        return _version()
 
     if name == "util":
         return _warned_import(
