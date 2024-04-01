@@ -86,14 +86,15 @@ __all__ = [
     "to_hex_sha",
 ]
 
-__version__ = "git"
+__version__: str
+
+import sys
+import warnings
 
 from typing import Any, List, Optional, Sequence, TYPE_CHECKING, Tuple, Union
 
 if TYPE_CHECKING:
     from types import ModuleType
-
-import warnings
 
 from gitdb.util import to_hex_sha
 
@@ -193,7 +194,13 @@ def _warned_import(message: str, fullname: str) -> "ModuleType":
 
 
 def _getattr(name: str) -> Any:
-    # TODO: If __version__ is made dynamic and lazily fetched, put that case right here.
+    if name == "__version__":
+        if sys.version_info >= (3, 8):
+            from importlib.metadata import version
+        else:
+            from importlib_metadata import version
+
+        return version("GitPython")
 
     if name == "util":
         return _warned_import(
