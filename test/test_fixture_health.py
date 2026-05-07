@@ -45,6 +45,19 @@ FIXTURE_DIRS = [
     ),
 ]
 
+# Submodule working trees that must be present and initialized for the
+# test suite to operate normally: gitdb at `git/ext/gitdb`, and smmap
+# nested inside gitdb at `git/ext/gitdb/gitdb/ext/smmap`. The paths
+# below are anchored at REPO_ROOT (the GitPython source tree), not at
+# any rorepo redirection target.
+SUBMODULE_DIRS = [
+    pytest.param(REPO_ROOT / "git" / "ext" / "gitdb", id="gitdb"),
+    pytest.param(
+        REPO_ROOT / "git" / "ext" / "gitdb" / "gitdb" / "ext" / "smmap",
+        id="smmap",
+    ),
+]
+
 
 @pytest.mark.parametrize("fixture_dir", FIXTURE_DIRS)
 def test_fixture_dir_is_trusted_by_git(fixture_dir: Path) -> None:
@@ -88,4 +101,33 @@ def test_fixture_dir_is_trusted_by_git(fixture_dir: Path) -> None:
         f"not as {fixture_dir} itself. "
         "This usually means the directory is not an initialized git "
         "repository (its `.git` marker may be stale or pointing elsewhere)."
+    )
+
+
+@pytest.mark.parametrize("submodule_dir", SUBMODULE_DIRS)
+def test_required_submodule_is_initialized(submodule_dir: Path) -> None:
+    """The submodule's working tree is present and initialized.
+
+    Failure means the source tree is a git clone but ``init-tests-after-clone.sh``
+    (or its equivalent) hasn't been run, so the submodule's working tree has
+    not been populated. Skipped when the source tree itself isn't a git clone
+    (e.g. an extracted release tarball), since ``git submodule update`` cannot
+    operate there; setups that handle submodules in a separately-prepared
+    tree (via ``GIT_PYTHON_TEST_GIT_REPO_BASE``) are exempted from this check.
+    """
+    if not (REPO_ROOT / ".git").exists():
+        pytest.skip(
+            "Source tree is not a git clone (no .git in REPO_ROOT); submodules "
+            "cannot be initialized via `git submodule update` here. Setups "
+            "that prepare submodules in a separately-pointed tree (via "
+            "GIT_PYTHON_TEST_GIT_REPO_BASE) are exempted from this check."
+        )
+    assert submodule_dir.is_dir(), (
+        f"Submodule working tree missing: {submodule_dir}.\nRun ./init-tests-after-clone.sh from the repo root."
+    )
+    assert (submodule_dir / ".git").exists(), (
+        f"Submodule directory exists but has no .git marker: {submodule_dir}.\n"
+        "This usually means the directory was created (e.g. by extracting a "
+        "source tarball) but `git submodule update --init` was never run for "
+        "it. Run ./init-tests-after-clone.sh from the repo root."
     )
