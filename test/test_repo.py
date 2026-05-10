@@ -54,7 +54,7 @@ def flatten(lol):
     return list(iter_flatten(lol))
 
 
-_tc_lock_fpaths = osp.join(osp.dirname(__file__), "../../.git/*.lock")
+_tc_lock_fpaths = osp.join(osp.dirname(__file__), "../.git/*.lock")
 
 
 def _rm_lock_files():
