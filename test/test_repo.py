@@ -62,6 +62,38 @@ def _rm_lock_files():
         rmfile(lfp)
 
 
+def test_rm_lock_files_actually_removes_lock_files():
+    """Verify ``_rm_lock_files`` actually finds and removes ``.lock`` files.
+
+    Regression guard against ``_tc_lock_fpaths`` pointing somewhere
+    other than the repository's own ``.git/``. If the path expression
+    is wrong, :func:`glob.glob` returns ``[]`` and the cleanup helper
+    silently does nothing.
+
+    Creates a ``.lock`` file in ``<repo>/.git/`` and asserts that
+    ``_rm_lock_files()`` removes it. Depends on ``__file__`` resolving
+    to the real ``<repo>/test/test_repo.py`` at runtime (i.e. running
+    the tests from the source tree, as CI does). When ``<repo>/.git``
+    is not a directory -- e.g. in a linked worktree where it is a
+    gitfile -- the test is skipped, since the cleanup helper isn't
+    meaningful in that context.
+    """
+    repo_dot_git = osp.join(osp.dirname(osp.dirname(osp.abspath(__file__))), ".git")
+    if not osp.isdir(repo_dot_git):
+        pytest.skip(f"{repo_dot_git} is not a directory; cleanup helper isn't meaningful here")
+
+    canary = osp.join(repo_dot_git, "_test_rm_lock_files_canary.lock")
+    open(canary, "w").close()
+    try:
+        _rm_lock_files()
+        assert not osp.exists(canary), (
+            f"_rm_lock_files() left {canary} in place; _tc_lock_fpaths is probably pointing outside the repo's .git"
+        )
+    finally:
+        if osp.exists(canary):
+            os.unlink(canary)
+
+
 class TestRepo(TestBase):
     def setUp(self):
         _rm_lock_files()
