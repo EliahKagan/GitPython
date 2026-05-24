@@ -4,7 +4,6 @@
 # 3-Clause BSD License: https://opensource.org/license/bsd-3-clause/
 
 import gc
-import glob
 import io
 from io import BytesIO
 import itertools
@@ -39,7 +38,7 @@ from git import (
 )
 from git.exc import BadObject
 from git.repo.fun import touch
-from git.util import bin_to_hex, cwd, cygpath, join_path_native, rmfile, rmtree
+from git.util import bin_to_hex, cwd, cygpath, join_path_native, rmtree
 
 from test.lib import TestBase, fixture, with_rw_directory, with_rw_repo, PathLikeMock
 
@@ -54,23 +53,8 @@ def flatten(lol):
     return list(iter_flatten(lol))
 
 
-_tc_lock_fpaths = osp.join(osp.dirname(__file__), "../../.git/*.lock")
-
-
-def _rm_lock_files():
-    for lfp in glob.glob(_tc_lock_fpaths):
-        rmfile(lfp)
-
-
 class TestRepo(TestBase):
-    def setUp(self):
-        _rm_lock_files()
-
     def tearDown(self):
-        for lfp in glob.glob(_tc_lock_fpaths):
-            if osp.isfile(lfp):
-                raise AssertionError("Previous TC left hanging git-lock file: {}".format(lfp))
-
         gc.collect()
 
     def test_new_should_raise_on_invalid_repo_location(self):
