@@ -111,10 +111,11 @@ class TestRepo(TestBase):
         r_from_gitdir = Repo(PathLikeMock(rw_repo.git_dir))
         self.assertEqual(r_from_gitdir.git_dir, rw_repo.git_dir)
 
-    def test_description(self):
+    @with_rw_repo("HEAD")
+    def test_description(self, rwrepo):
         txt = "Test repository"
-        self.rorepo.description = txt
-        self.assertEqual(self.rorepo.description, txt)
+        rwrepo.description = txt
+        self.assertEqual(rwrepo.description, txt)
 
     def test_heads_should_return_array_of_head_objects(self):
         for head in self.rorepo.heads:
@@ -567,10 +568,11 @@ class TestRepo(TestBase):
         reader = self.rorepo.config_reader("repository")  # Single config file.
         assert reader.read_only
 
-    def test_config_writer(self):
-        for config_level in self.rorepo.config_level:
+    @with_rw_repo("HEAD")
+    def test_config_writer(self, rwrepo):
+        for config_level in rwrepo.config_level:
             try:
-                with self.rorepo.config_writer(config_level) as writer:
+                with rwrepo.config_writer(config_level) as writer:
                     self.assertFalse(writer.read_only)
             except IOError:
                 # It's okay not to get a writer for some configuration files if we
@@ -581,22 +583,23 @@ class TestRepo(TestBase):
         for config_level in self.rorepo.config_level:
             assert self.rorepo._get_config_path(config_level)
 
-    def test_creation_deletion(self):
+    @with_rw_repo("HEAD")
+    def test_creation_deletion(self, rwrepo):
         # Just a very quick test to assure it generally works. There are specialized
         # cases in the test_refs module.
-        head = self.rorepo.create_head("new_head", "HEAD~1")
-        self.rorepo.delete_head(head)
+        head = rwrepo.create_head("new_head", "HEAD~1")
+        rwrepo.delete_head(head)
 
         try:
-            tag = self.rorepo.create_tag("new_tag", "HEAD~2")
+            tag = rwrepo.create_tag("new_tag", "HEAD~2")
         finally:
-            self.rorepo.delete_tag(tag)
-        with self.rorepo.config_writer():
+            rwrepo.delete_tag(tag)
+        with rwrepo.config_writer():
             pass
         try:
-            remote = self.rorepo.create_remote("new_remote", "git@server:repo.git")
+            remote = rwrepo.create_remote("new_remote", "git@server:repo.git")
         finally:
-            self.rorepo.delete_remote(remote)
+            rwrepo.delete_remote(remote)
 
     def test_comparison_and_hash(self):
         # This is only a preliminary test, more testing done in test_index.
