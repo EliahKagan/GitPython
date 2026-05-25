@@ -300,22 +300,24 @@ class TestRepo(TestBase):
     def test_bare_property(self):
         self.rorepo.bare
 
-    def test_daemon_export(self):
-        orig_val = self.rorepo.daemon_export
-        self.rorepo.daemon_export = not orig_val
-        self.assertEqual(self.rorepo.daemon_export, (not orig_val))
-        self.rorepo.daemon_export = orig_val
-        self.assertEqual(self.rorepo.daemon_export, orig_val)
+    @with_rw_repo("HEAD")
+    def test_daemon_export(self, rwrepo):
+        orig_val = rwrepo.daemon_export
+        rwrepo.daemon_export = not orig_val
+        self.assertEqual(rwrepo.daemon_export, (not orig_val))
+        rwrepo.daemon_export = orig_val
+        self.assertEqual(rwrepo.daemon_export, orig_val)
 
-    def test_alternates(self):
-        cur_alternates = self.rorepo.alternates
+    @with_rw_repo("HEAD")
+    def test_alternates(self, rwrepo):
+        cur_alternates = rwrepo.alternates
         # empty alternates
-        self.rorepo.alternates = []
-        self.assertEqual(self.rorepo.alternates, [])
+        rwrepo.alternates = []
+        self.assertEqual(rwrepo.alternates, [])
         alts = ["other/location", "this/location"]
-        self.rorepo.alternates = alts
-        self.assertEqual(alts, self.rorepo.alternates)
-        self.rorepo.alternates = cur_alternates
+        rwrepo.alternates = alts
+        self.assertEqual(alts, rwrepo.alternates)
+        rwrepo.alternates = cur_alternates
 
     def test_repr(self):
         assert repr(self.rorepo).startswith("<git.repo.base.Repo ")
