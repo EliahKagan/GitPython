@@ -3,7 +3,6 @@ basedpyright==1.39.9 ; python_version >= "3.9" and sys_platform != "cygwin"
 ddt >= 1.1.1, != 1.4.3
 mock ; python_version < "3.8"
 mypy==1.18.2 ; python_version >= "3.9" # pin mypy version to avoid new errors
-pre-commit
 pytest >= 7.3.1
 pytest-cov
 pytest-instafail

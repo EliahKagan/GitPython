@@ -157,10 +157,13 @@ pytest
 To lint, and apply some linting fixes as well as automatic code formatting, run:
 
 ```sh
-pre-commit run --all-files
+prek run --all-files
 ```
 
 This includes the linting and autoformatting done by Ruff, as well as some other checks.
+[`prek`](https://prek.j178.dev/) is not installed by the `test` extra; install it with
+`pip install prek`. It reads the same configuration as `pre-commit`, which can be used
+instead if you prefer it or if `prek` is unavailable on your platform.
 
 To typecheck, run:
 
@@ -187,7 +190,7 @@ Specific tools are all configured in the [`./pyproject.toml`](https://github.com
 
 Orchestration tools:
 
-- Configuration for `pre-commit` is in the [`./.pre-commit-config.yaml`](https://github.com/gitpython-developers/GitPython/blob/main/.pre-commit-config.yaml) file.
+- Configuration for `prek` (and `pre-commit`) is in the [`./.pre-commit-config.yaml`](https://github.com/gitpython-developers/GitPython/blob/main/.pre-commit-config.yaml) file.
 - Configuration for `tox` is in [`./tox.ini`](https://github.com/gitpython-developers/GitPython/blob/main/tox.ini).
 - Configuration for GitHub Actions (CI) is in files inside [`./.github/workflows/`](https://github.com/gitpython-developers/GitPython/tree/main/.github/workflows).
 
