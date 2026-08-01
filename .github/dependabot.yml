@@ -1,10 +1,11 @@
 version: 2
-enable-beta-ecosystems: true
 updates:
 - package-ecosystem: github-actions
   directory: "/"
   schedule:
     interval: weekly
+  cooldown:
+    default-days: 7
 
 - package-ecosystem: pre-commit
   directory: "/"
@@ -13,3 +14,10 @@ updates:
   groups:
     pre-commit:
       patterns: ["*"]
+  # Dependabot accepts this key here but does not currently honor it: update
+  # PRs are opened well inside the window. See dependabot/dependabot-core#15077,
+  # which is open. It is set anyway, so the cooldown applies as soon as that is
+  # fixed. Only `default-days` works for this ecosystem; `semver-major-days`,
+  # `semver-minor-days` and `semver-patch-days` are not supported for it.
+  cooldown:
+    default-days: 7
