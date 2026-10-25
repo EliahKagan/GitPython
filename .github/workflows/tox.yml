@@ -4,6 +4,8 @@ name: tox
 # works, including with new releases of tox and virtualenv. That is too slow to
 # run on every push and pull request, so it runs weekly and on demand.
 on:
+  push:
+    branches: [claude/tox-workflow-push-test]  # TEMPORARY: only to test this workflow.
   schedule:
   - cron: "37 5 * * 1"  # Mondays at 05:37 UTC.
   workflow_dispatch:
