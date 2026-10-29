@@ -157,7 +157,12 @@ lint.unfixable = [
 ]
 
 [tool.tox]
-requires = ["tox>=4.22"]
+requires = ["tox>=4.41"]
+# tox older than 4.41 reads only this, and provisions a newer tox, which reads the rest.
+legacy_tox_ini = """
+[tox]
+requires = tox>=4.41
+"""
 # Skip environments whose Python is not installed.
 skip_missing_interpreters = true
 env_list = [
