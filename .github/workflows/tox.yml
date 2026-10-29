@@ -88,9 +88,36 @@ jobs:
         python3.13 -m tox --version
 
     - name: Run tox
+      id: tox
       run: |
         # Fail, rather than skip, if an environment's Python is missing.
         python3.13 -m tox --skip-missing-interpreters=false
       env:
         # tox-gh selects the environments mapped to this version in `[tool.tox.gh.python]`.
         TOX_GH_MAJOR_MINOR: ${{ matrix.python-version }}
+
+    - name: Check that each tox environment used the expected Python
+      # Also check if tox failed, so a wrong interpreter is reported either way.
+      if: ${{ !cancelled() && steps.tox.outcome != 'skipped' }}
+      run: |
+        # A pyXY environment must use Python X.Y. Every other environment that
+        # tox-gh ran in this job must use the job's Python version.
+        shopt -s nullglob
+        status=0
+        count=0
+        for env in .tox/*/; do  # Hidden packaging environments like .pkg are not matched.
+          name="$(basename "$env")"
+          case "$name" in
+          py3*) want="3.${name#py3}" ;;
+          *) want="$PYTHON_VERSION" ;;
+          esac
+          # An environment whose creation failed may have no usable python. Report it and go on.
+          got="$("$env/bin/python" -c 'import sys; print("%d.%d" % sys.version_info[:2])')" || got=none
+          echo "$name: Python $got (expected $want)"
+          if [[ "$got" != "$want" ]]; then status=1; fi
+          count=$((count + 1))
+        done
+        if ((count == 0)); then echo 'No tox environments found.' >&2; status=1; fi
+        exit "$status"
+      env:
+        PYTHON_VERSION: ${{ matrix.python-version }}
