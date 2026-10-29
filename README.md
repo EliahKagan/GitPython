@@ -232,7 +232,7 @@ Specific tools are all configured in the [`./pyproject.toml`](https://github.com
 Orchestration tools:
 
 - Configuration for `pre-commit` is in the [`./.pre-commit-config.yaml`](https://github.com/gitpython-developers/GitPython/blob/main/.pre-commit-config.yaml) file.
-- Configuration for `tox` is in the `[tool.tox]` table of [`./pyproject.toml`](https://github.com/gitpython-developers/GitPython/blob/main/pyproject.toml), which requires tox 4.22 or later.
+- Configuration for `tox` is in the `[tool.tox]` table of [`./pyproject.toml`](https://github.com/gitpython-developers/GitPython/blob/main/pyproject.toml), which requires tox 4.41 or later. An older tox 4 installs and runs a newer one automatically, if it can download it and Python 3.10 or later is available for it.
 - Configuration for GitHub Actions (CI) is in files inside [`./.github/workflows/`](https://github.com/gitpython-developers/GitPython/tree/main/.github/workflows).
 
 ### Contributions

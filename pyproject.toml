@@ -157,7 +157,28 @@ lint.unfixable = [
 ]
 
 [tool.tox]
-requires = ["tox>=4.22"]
+requires = ["tox>=4.41"]
+# tox older than 4.41 uses only this: before 4.21 it cannot read the native tables, and 4.21 to 4.40
+# prefer this when both are present. It makes that tox install and run tox 4.41 or later, which uses
+# the native tables instead. (tox 3 also reads it, but can install tox 4.41 only when itself running
+# on Python 3.10 or later, since it ignores `base_python`.) It is INI, which tox deprecates, because
+# older tox reads nothing else. It can be removed once tox older than 4.41 need not be supported.
+legacy_tox_ini = """
+[tox]
+requires = tox>=4.41
+# Older tox accepts only environment names it can see. Keep these in step with the tables below.
+env_list = py{38,39,310,311,312,313,314,315}, ruff, format, mypy, html, misc, gix
+
+# If a tox runs an environment from here, rather than a newer tox from the native tables, fail.
+[testenv]
+skip_install = true
+commands = python -c "raise SystemExit('This needs tox 4.41 or later, which tox did not install.')"
+
+# tox 4.41 needs Python 3.10 or later, which may not be the Python running the older tox.
+# Keep these in step with the Python versions tested, from 3.10 on.
+[testenv:.tox]
+base_python = py314, py313, py312, py311, py310, py315
+"""
 # Skip environments whose Python is not installed.
 skip_missing_interpreters = true
 env_list = [
