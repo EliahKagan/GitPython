@@ -155,3 +155,114 @@ lint.unfixable = [
 "fuzzing/fuzz-targets/**" = [
   "E402",  # environment setup must happen before the `git` module is imported, thus cannot happen at top of file
 ]
+
+[tool.tox]
+requires = ["tox>=4.22"]
+# Skip environments whose Python is not installed.
+skip_missing_interpreters = true
+env_list = [
+    "py38",
+    "py39",
+    "py310",
+    "py311",
+    "py312",
+    "py313",
+    "py314",
+    "py315",
+    "ruff",
+    "format",
+    "mypy",
+    "html",
+    "misc",
+]
+
+[tool.tox.env_run_base]
+description = "Run unit tests"
+package = "wheel"
+# Use the in-tree smmap and gitdb, as CI does, rather than releases from PyPI.
+deps = ["{tox_root}/smmap", "{tox_root}/gitdb"]
+extras = ["test"]
+pass_env = [
+    "SSH_*",
+    "GIT_PYTHON_GIT_EXECUTABLE",
+]
+set_env = { GIT_PYTHON_BACKEND = "cli" }
+commands = [["pytest", "--color=yes", { replace = "posargs", extend = true }]]
+
+[tool.tox.env.py38]
+description = "Install and import GitPython (the tests need Python 3.11 or later)"
+extras = []
+commands = [
+    ["python", "-I", "-c", "import git; from git import _backend; assert _backend.name == 'cli'; print(git.__version__)"],
+]
+
+[tool.tox.env.py39]
+description = "Install and import GitPython (the tests need Python 3.11 or later)"
+extras = []
+commands = [
+    ["python", "-I", "-c", "import git; from git import _backend; assert _backend.name == 'cli'; print(git.__version__)"],
+]
+
+[tool.tox.env.py310]
+description = "Install and import GitPython (the tests need Python 3.11 or later)"
+extras = []
+commands = [
+    ["python", "-I", "-c", "import git; from git import _backend; assert _backend.name == 'cli'; print(git.__version__)"],
+]
+
+[tool.tox.env.ruff]
+description = "Lint with Ruff"
+base_python = ["py39", "py310", "py311", "py312", "py313", "py314", "py315"]
+skip_install = true
+deps = ["ruff"]
+set_env = { CLICOLOR_FORCE = "1" }  # Set NO_COLOR to override this.
+commands = [["ruff", "check", "."]]
+
+[tool.tox.env.gix]
+# Let tests download packages, as `test/run-local.py` otherwise forbids, unless `PIP_NO_INDEX` is already set.
+set_env = { GIT_PYTHON_BACKEND = "gix", PIP_NO_INDEX = { replace = "env", name = "PIP_NO_INDEX", default = "0" } }
+description = "Run the suite with released GixPython and CLI fallback"
+base_python = ["python3"]
+package_env = ".pkg-gix"
+wheel_build_env = ".pkg-gix"
+extras = ["test", "gix"]
+commands = [
+    [
+        "python",
+        "test/run-local.py",
+        { replace = "posargs", default = ["--backend-report=.cache/gix-coverage.json"], extend = true },
+    ],
+]
+
+[tool.tox.env.format]
+description = "Check formatting with Ruff"
+base_python = ["py39", "py310", "py311", "py312", "py313", "py314", "py315"]
+skip_install = true
+deps = ["ruff"]
+set_env = { CLICOLOR_FORCE = "1" }  # Set NO_COLOR to override this.
+commands = [["ruff", "format", "--check", "."]]
+
+[tool.tox.env.mypy]
+description = "Typecheck with mypy"
+base_python = ["py39", "py310", "py311", "py312", "py313", "py314", "py315"]
+set_env = { MYPY_FORCE_COLOR = "1" }
+commands = [["mypy"]]
+
+[tool.tox.env.html]
+description = "Build HTML documentation"
+base_python = ["py39", "py310", "py311", "py312", "py313", "py314", "py315"]
+extras = []
+dependency_groups = ["doc"]
+allowlist_externals = ["make"]
+commands = [
+    ["make", "BUILDDIR={env_tmp_dir}/doc/build", "-C", "doc", "clean"],
+    ["make", "BUILDDIR={env_tmp_dir}/doc/build", "-C", "doc", "html"],
+]
+
+[tool.tox.env.misc]
+description = "Run other checks via pre-commit"
+base_python = ["py39", "py310", "py311", "py312", "py313", "py314", "py315"]
+skip_install = true
+deps = ["pre-commit"]
+set_env = { SKIP = "ruff-format,ruff-check" }
+commands = [["pre-commit", "run", "--all-files"]]
