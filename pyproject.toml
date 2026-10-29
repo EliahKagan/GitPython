@@ -163,7 +163,7 @@ legacy_tox_ini = """
 [tox]
 requires = tox>=4.41
 """
-# Skip environments whose Python is not installed.
+# Skip environments whose Python is not installed. The `tox` workflow overrides this.
 skip_missing_interpreters = true
 env_list = [
     "py38",
@@ -271,3 +271,15 @@ skip_install = true
 deps = ["pre-commit"]
 set_env = { SKIP = "ruff-format,ruff-check" }
 commands = [["pre-commit", "run", "--all-files"]]
+
+# Environments that the `tox` workflow runs for each Python version, via tox-gh.
+# tox-gh does nothing outside GitHub Actions.
+[tool.tox.gh.python]
+"3.8" = ["py38"]
+"3.9" = ["py39"]
+"3.10" = ["py310"]
+"3.11" = ["py311"]
+"3.12" = ["py312"]
+"3.13" = ["py313", "gix", "ruff", "format", "mypy", "html", "misc"]
+"3.14" = ["py314"]
+"3.15" = ["py315"]
