@@ -182,12 +182,20 @@ the test aliases directly, matching CI without introducing config includes.
 
 The runner uses local version tags, creates an isolated Git configuration,
 prepares the historical test fixture through cached Bash scripts, gives
-pytest a separate temporary root for each run, and disables package-index
-access. Cleanup of these isolated directories is best-effort, so a locked
-leftover cannot change pytest's exit status. Tests use local repositories,
-including the tutorial example. The suite needs loopback sockets for its Git daemon and
-permission to inspect its own child processes. It does not need a remote Git
-server. Missing local tags or packages are errors, not invitations to download.
+pytest a separate temporary root for each run, and by default disables
+package-index access. Cleanup of these isolated directories is best-effort,
+so a locked leftover cannot change pytest's exit status. Tests use local
+repositories, including the tutorial example. The suite needs loopback
+sockets for its Git daemon and permission to inspect its own child
+processes. It does not need a remote Git server. Missing local tags are
+errors, not invitations to download, and by default so are missing
+packages.
+
+The runner keeps `PIP_NO_INDEX` if it is already set, and pip treats `0` as
+allowing the package index. `tox -e gix` sets it to `0` unless it is set, so
+its installation test can download build dependencies. To run that
+environment offline, set `PIP_NO_INDEX=1`, which tox also applies when
+installing the environment, and point `PIP_FIND_LINKS` at the wheels.
 
 The ignored `.cache/gix-wheels` directory contains the published GixPython wheel and
 the build/test dependencies available on this machine. To recreate an
