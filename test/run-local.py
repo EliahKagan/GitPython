@@ -26,7 +26,7 @@ def main():
             **os.environ,
             "GIT_CONFIG_NOSYSTEM": "1",
             "GIT_CONFIG_GLOBAL": str(config),
-            "PIP_NO_INDEX": "1",
+            "PIP_NO_INDEX": os.environ.get("PIP_NO_INDEX", "1"),
             "PIP_DISABLE_PIP_VERSION_CHECK": "1",
             "PIP_FIND_LINKS": os.environ.get("PIP_FIND_LINKS", str(root / ".cache/gix-wheels")),
             "UV_OFFLINE": "1",
