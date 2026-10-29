@@ -273,7 +273,9 @@ set_env = { SKIP = "ruff-format,ruff-check" }
 commands = [["pre-commit", "run", "--all-files"]]
 
 # Environments that the `tox` workflow runs for each Python version, via tox-gh.
-# tox-gh does nothing outside GitHub Actions.
+# tox-gh does nothing outside GitHub Actions. The workflow checks that each
+# environment ran on its job's version. `gix` runs on the Python that tox runs
+# on, which in the workflow is 3.13.
 [tool.tox.gh.python]
 "3.8" = ["py38"]
 "3.9" = ["py39"]
