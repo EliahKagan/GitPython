@@ -31,3 +31,7 @@ repos:
   rev: v0.25
   hooks:
   - id: validate-pyproject
+    # Also validate `[tool.tox]`, with SchemaStore's schema. Leave other tool tables to their
+    # own tools, which know their current options. The `--` ends the list of plugins.
+    args: ["--enable-plugins", "setuptools", "distutils", "tox", "--"]
+    additional_dependencies: ["validate-pyproject-schema-store[all]==2026.10.17"]
