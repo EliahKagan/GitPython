@@ -1,0 +1,124 @@
+name: tox
+
+# The main CI does not use tox, so this checks that the tox configuration still
+# works, including with new releases of tox and virtualenv. That is too slow to
+# run on every push and pull request, so it runs weekly and on demand.
+on:
+  push:
+    branches: [claude/tox-fix-environments-ci-test]  # TEMPORARY: only to test PR 1's tox.ini.
+  schedule:
+  - cron: "37 5 * * 1"  # Mondays at 05:37 UTC.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tox:
+    name: tox (${{ matrix.python-version }})
+
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
+        include:
+        # setup-python has no builds of these versions for Ubuntu 26.04.
+        - python-version: "3.8"
+          os: ubuntu-24.04
+        - python-version: "3.9"
+          os: ubuntu-24.04
+
+      fail-fast: false
+
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    timeout-minutes: 60
+
+    defaults:
+      run:
+        shell: bash --noprofile --norc -exo pipefail {0}
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+
+    - name: Set up Python ${{ matrix.python-version }}, and Python 3.13 for tox
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        # Current tox does not run on some of the versions it tests, so it gets
+        # its own interpreter. The last version listed becomes the default.
+        python-version: |
+          3.13
+          ${{ matrix.python-version }}
+        allow-prereleases: true
+
+    - name: Prepare Rust for GixPython source builds
+      run: |
+        # GixPython 0.3.0 publishes macOS wheels only and needs Rust >= 1.89.
+        rustup toolchain install stable --profile minimal
+        rustup default stable
+        rustc --version
+
+    - name: Install current Git
+      run: |
+        sudo add-apt-repository --yes ppa:git-core/ppa
+        sudo apt-get update
+        sudo apt-get install --yes git
+
+    - name: Prepare this repo for tests
+      run: |
+        ./init-tests-after-clone.sh
+
+    - name: Set git user identity and command aliases for the tests
+      run: |
+        git config --global user.email "travis@ci.com"
+        git config --global user.name "Travis Runner"
+        # If we rewrite the user's config by accident, we will mess it up
+        # and cause subsequent tests to fail
+        cat test/fixtures/.gitconfig >> ~/.gitconfig
+
+    - name: Install tox
+      # Unpinned on purpose, to find out when a new tox breaks the configuration.
+      run: |
+        python3.13 -m pip install tox tox-gh
+
+    - name: Show version and platform information
+      run: |
+        uname -a
+        git version
+        python --version
+        python3.13 -m tox --version
+
+    - name: Run tox
+      id: tox
+      run: |
+        # Fail, rather than skip, if an environment's Python is missing.
+        python3.13 -m tox --skip-missing-interpreters=false
+      env:
+        # tox-gh selects the environments mapped to this version in `[tool.tox.gh.python]`.
+        TOX_GH_MAJOR_MINOR: ${{ matrix.python-version }}
+
+    - name: Check that each tox environment used the expected Python
+      # Also check if tox failed, so a wrong interpreter is reported either way.
+      if: ${{ !cancelled() && steps.tox.outcome != 'skipped' }}
+      run: |
+        # A pyXY environment must use Python X.Y. Every other environment that
+        # tox-gh ran in this job must use the job's Python version.
+        shopt -s nullglob
+        status=0
+        count=0
+        for env in .tox/*/; do  # Hidden packaging environments like .pkg are not matched.
+          name="$(basename "$env")"
+          case "$name" in
+          py3*) want="3.${name#py3}" ;;
+          *) want="$PYTHON_VERSION" ;;
+          esac
+          got="$("$env/bin/python" -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+          echo "$name: Python $got (expected $want)"
+          if [[ "$got" != "$want" ]]; then status=1; fi
+          count=$((count + 1))
+        done
+        if ((count == 0)); then echo 'No tox environments found.' >&2; status=1; fi
+        exit "$status"
+      env:
+        PYTHON_VERSION: ${{ matrix.python-version }}
