@@ -121,3 +121,52 @@ jobs:
         exit "$status"
       env:
         PYTHON_VERSION: ${{ matrix.python-version }}
+
+  old-tox:
+    name: tox ${{ matrix.tox-version }} (provisions a newer tox)
+
+    strategy:
+      matrix:
+        # 4.20.0 is the last tox that cannot read `[tool.tox]`. 4.30.0 can, but uses
+        # `legacy_tox_ini` instead when both are present. Both run on Python 3.9.
+        tox-version: ["4.20.0", "4.30.0"]
+
+      fail-fast: false
+
+    runs-on: ubuntu-24.04  # setup-python has no builds of Python 3.9 for Ubuntu 26.04.
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        shell: bash --noprofile --norc -exo pipefail {0}
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Set up Python 3.9 for the old tox, and Python 3.13 for the tox it installs
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: |
+          3.13
+          3.9
+
+    - name: Install tox ${{ matrix.tox-version }}
+      run: |
+        python3.9 -m pip install "tox==$TOX_VERSION"
+      env:
+        TOX_VERSION: ${{ matrix.tox-version }}
+
+    - name: Check that it provisions a newer tox, which uses the configuration
+      run: |
+        # The old tox accepts only environment names it finds in `legacy_tox_ini`, so
+        # give it every name in the native tables, including `gix`, which is not in
+        # their `env_list`. The description shown for `gix` comes from the native tables.
+        envs="$(python3.13 -c 'import tomllib; t = tomllib.load(open("pyproject.toml", "rb"))["tool"]["tox"]; print(",".join(dict.fromkeys([*t["env_list"], *t["env"]])))')"
+        python3.9 -m tox config -e "$envs" -k description | tee config.txt
+        grep -F 'description = Run the suite with released GixPython' config.txt
+        python3.9 -m tox -e ruff,format | tee run.txt
+        grep -F 'provision>' run.txt
+        # Show the tox that was installed, and where, which shows its Python version.
+        .tox/.tox/bin/python -m tox --version
