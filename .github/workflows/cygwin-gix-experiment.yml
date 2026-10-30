@@ -1,0 +1,232 @@
+name: cygwin-gix-experiment
+
+# Experiment: can GixPython be built on Cygwin, so the fixture-based test suite
+# can run there again? Not intended for merging.
+
+on:
+  push:
+    branches: [claude/try-cygwin-gixpython-tests]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GIXPYTHON_SDIST_URL: https://files.pythonhosted.org/packages/08/a9/121c9d1b8ae033cb5cb63d87e80c43fba662590c10df437ae635452394a4/gixpython-0.3.0.tar.gz
+  GIXPYTHON_SDIST_SHA256: 3deec47485fec6221850ced1bcb7608c0b14ef47391d42716718deee5031c9f3
+  PIP_WHEEL_URL: https://files.pythonhosted.org/packages/de/f0/c81e05b613866b76d2d1066490adf1a3dbc4ee9d9c839961c3fc8a6997af/pip-26.0.1-py3-none-any.whl
+  PIP_WHEEL_SHA256: bdb1b08f4274833d62c1aa29e20907365a2ceb950410df15fc9521bad440122b
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        # The sdist as released fails to link: its abi3 maturin feature makes
+        # PyO3 link `-lpython3`, which Cygwin lacks. Drop it, linking
+        # `libpython3.12.dll` instead.
+        variant: [no-abi3]
+      fail-fast: false
+
+    runs-on: windows-latest
+    timeout-minutes: 180
+
+    env:
+      CHERE_INVOKING: "1"
+      CYGWIN_NOWINPATH: "1"
+      # Faster than the sdist's thin-LTO, single-codegen-unit release profile.
+      CARGO_PROFILE_RELEASE_LTO: "false"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+      VARIANT: ${{ matrix.variant }}
+
+    defaults:
+      run:
+        shell: C:\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr "{0}"
+
+    steps:
+    - name: Install Cygwin
+      uses: cygwin/cygwin-install-action@3f0a3f9f988f7e96b8c18098ae05eaec175f5b52 # v6.0.2
+      with:
+        packages: >-
+          curl gcc-core gcc-g++ make python312 python312-devel python312-maturin
+          python-pip-wheel python-setuptools-wheel python-wheel-wheel rust
+        add-to-path: false
+
+    - name: Arrange for verbose output
+      run: echo 'set -x' >~/.bash_profile
+
+    - name: Show toolchain and libpython information
+      run: |
+        uname -a
+        rustc -vV
+        cargo -V
+        python3.12 -VV
+        python3.12 -m maturin --version
+        python3.12 -c 'import sysconfig as s; print(s.get_config_var("LDLIBRARY"), s.get_config_var("LIBDIR"), s.get_platform())'
+        ls -l /usr/bin/libpython3*.dll /usr/lib/libpython3* || true
+
+    - name: Fetch and unpack the GixPython 0.3.0 sdist
+      run: |
+        mkdir -p /tmp/gixpython
+        curl -fsSLo /tmp/gixpython/sdist.tar.gz "$GIXPYTHON_SDIST_URL"
+        echo "$GIXPYTHON_SDIST_SHA256  /tmp/gixpython/sdist.tar.gz" | sha256sum -c -
+        tar -xzf /tmp/gixpython/sdist.tar.gz -C /tmp/gixpython
+
+    - name: Adjust the sdist for this variant
+      working-directory: C:\cygwin\tmp\gixpython\gixpython-0.3.0
+      run: |
+        sed -i '/^features = \["abi3"\]$/d' pyproject.toml
+        if grep -n abi3 pyproject.toml; then exit 1; fi
+        grep -n -A4 '^\[tool.maturin\]' pyproject.toml
+
+    - name: Build the wheel
+      working-directory: C:\cygwin\tmp\gixpython\gixpython-0.3.0
+      run: |
+        python3.12 -m maturin build --release --interpreter python3.12 --out /tmp/wheels
+        ls -l /tmp/wheels
+
+    - name: Set up virtual environment
+      run: |
+        # Cygwin's ensurepip wants a bundled pip 25.0.1 wheel that isn't installed.
+        # Bootstrap pip from its own wheel instead.
+        curl -fsSLo /tmp/pip-26.0.1-py3-none-any.whl "$PIP_WHEEL_URL"
+        echo "$PIP_WHEEL_SHA256  /tmp/pip-26.0.1-py3-none-any.whl" | sha256sum -c -
+        python3.12 -m venv --without-pip /tmp/venv
+        /tmp/venv/bin/python /tmp/pip-26.0.1-py3-none-any.whl/pip install /tmp/pip-26.0.1-py3-none-any.whl
+
+    - name: Retag the wheel for pip
+      run: |
+        # maturin tags the wheel `cygwin_86_64`, which pip does not accept here.
+        platform="$(/tmp/venv/bin/python -c 'from pip._vendor.packaging.tags import sys_tags; print(next(iter(sys_tags())).platform)')"
+        mkdir /tmp/retagged
+        for wheel in /tmp/wheels/*.whl; do
+          name="$(basename -- "$wheel")"
+          cp -- "$wheel" "/tmp/retagged/${name%-*}-$platform.whl"
+        done
+        ls -l /tmp/retagged
+
+    - name: Check that the wheel installs and imports
+      run: |
+        /tmp/venv/bin/pip install /tmp/retagged/*.whl
+        cd /
+        /tmp/venv/bin/python -I -c 'import gix; from gix import testtools; print(gix.__file__)'
+
+    - name: Retain the wheel
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: wheel-${{ matrix.variant }}
+        path: C:\cygwin\tmp\retagged\*.whl
+        if-no-files-found: error
+
+  test:
+    needs: build
+    if: ${{ !cancelled() }}
+
+    strategy:
+      matrix:
+        backend: [cli, gix]
+      fail-fast: false
+
+    runs-on: windows-latest
+    timeout-minutes: 330
+
+    env:
+      CHERE_INVOKING: "1"
+      CYGWIN_NOWINPATH: "1"
+      GIT_PYTHON_BACKEND: ${{ matrix.backend }}
+
+    defaults:
+      run:
+        shell: C:\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr "{0}"
+
+    steps:
+    - name: Force LF line endings
+      run: |
+        git config --global core.autocrlf false  # Affects the non-Cygwin git.
+      shell: pwsh  # Do this outside Cygwin, to affect actions/checkout.
+
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+
+    - name: Download the built wheel
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: wheel-no-abi3
+        path: wheels
+
+    - name: Install Cygwin
+      uses: cygwin/cygwin-install-action@3f0a3f9f988f7e96b8c18098ae05eaec175f5b52 # v6.0.2
+      with:
+        packages: >-
+          curl gcc-core gcc-g++ git libcurl-devel libexpat-devel libiconv-devel
+          libssl-devel make python312 python312-devel python-pip-wheel
+          python-setuptools-wheel python-wheel-wheel zlib-devel
+        add-to-path: false
+
+    - name: Arrange for verbose output
+      run: echo 'set -x' >~/.bash_profile
+
+    - name: Locate the wheel
+      run: |
+        ls -lR wheels
+        wheels=(wheels/*.whl)
+        test "${#wheels[@]}" -eq 1
+        test -f "${wheels[0]}"
+        echo "GIX_WHEEL=$(pwd)/${wheels[0]}" >>"$GITHUB_ENV"
+
+    - name: Build minimum supported Cygwin Git
+      run: |
+        git clone --depth 1 --branch v2.52.0 -- https://github.com/git/git.git /tmp/git-source
+        make -C /tmp/git-source -j4 prefix=/usr NO_GETTEXT=YesPlease NO_TCLTK=YesPlease NO_PERL=YesPlease install
+        hash -r
+        test "$(git version)" = 'git version 2.52.0'
+
+    - name: Special configuration for Cygwin git
+      run: |
+        git config --global --add safe.directory "$(pwd)"
+        git config --global --add safe.directory "$(pwd)/.git"
+        git config --global core.autocrlf false
+
+    - name: Prepare this repo for tests
+      run: ./init-tests-after-clone.sh
+
+    - name: Set git user identity and command aliases for the tests
+      run: |
+        git config --global user.email "travis@ci.com"
+        git config --global user.name "Travis Runner"
+        cat test/fixtures/.gitconfig >> ~/.gitconfig
+
+    - name: Set up virtual environment
+      run: |
+        curl -fsSLo /tmp/pip-26.0.1-py3-none-any.whl "$PIP_WHEEL_URL"
+        echo "$PIP_WHEEL_SHA256  /tmp/pip-26.0.1-py3-none-any.whl" | sha256sum -c -
+        python3.12 -m venv --without-pip .venv
+        .venv/bin/python /tmp/pip-26.0.1-py3-none-any.whl/pip install /tmp/pip-26.0.1-py3-none-any.whl
+        echo 'BASH_ENV=.venv/bin/activate' >>"$GITHUB_ENV"
+
+    - name: Install project and test dependencies
+      run: |
+        pip install "$GIX_WHEEL"
+        pip install ./smmap ./gitdb '.[test]'
+
+    - name: Verify Cygwin Git detection, fixture tooling and backend
+      run: |
+        python -c 'from git import Git; assert Git.is_cygwin()'
+        python -c 'import os; from gix import testtools; from git import _backend; print("Backend:", _backend.name); assert _backend.name == os.environ["GIT_PYTHON_BACKEND"]'
+
+    - name: Show version and platform information
+      run: |
+        uname -a
+        command -v git python
+        git version
+        python --version
+        python -c 'import os, sys; print(f"{sys.platform=}, {os.name=}")'
+
+    - name: Test fixture health
+      run: pytest --color=yes -p no:sugar -vv test/test_fixture_health.py
+
+    - name: Test with pytest
+      run: |
+        pytest --color=yes -p no:sugar --instafail -vv --durations=30 \
+          --junitxml=test-results/pytest.xml
